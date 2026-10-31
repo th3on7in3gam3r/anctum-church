@@ -123,6 +123,7 @@ enum AuditAction {
   SETUP_ROLE_UPDATED
   SETUP_ROLE_DELETED
   SETUP_ROLE_ASSIGNED
+  SETUP_MEMBER_AREA_CHANGED
 }
 
 enum ChurchMemberStatus {
@@ -182,6 +183,7 @@ model Organization {
   brandTheme                String   @default("forest")
   features                  Json?
   terminology               Json?
+  memberArea                Json?
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
 

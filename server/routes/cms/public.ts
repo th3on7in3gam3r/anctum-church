@@ -13,7 +13,7 @@ import { getNextOccurrences } from '../../../src/services/sessionScheduler.ts';
 import type { PrayerRoom } from '../../../src/types/index.ts';
 import { publicLiveRooms } from '../../../shared/huddle.ts';
 import { FeatureOff } from '../../../shared/errors.ts';
-import { brandTheme, effectiveFeatures, featureDefinition, normalizeTerminology, type FeatureKey } from '../../../shared/churchSetup.ts';
+import { brandTheme, effectiveFeatures, featureDefinition, normalizeMemberArea, normalizeTerminology, visibleMemberPages, type FeatureKey } from '../../../shared/churchSetup.ts';
 
 /** Which church feature each public path belongs to. A church that turns a feature off loses it on its website too. */
 export const PUBLIC_FEATURE_BY_SEGMENT: Record<string, FeatureKey> = {
@@ -30,28 +30,36 @@ export const PUBLIC_FEATURE_BY_SEGMENT: Record<string, FeatureKey> = {
   live: 'prayerRooms',
 };
 
+/** The church's public face: name, colors, words, features and what the member area offers. */
+export async function churchProfileFor(slug: string) {
+  const organization = await organizationBySlug(slug);
+  const row = organization as typeof organization & { appName?: string | null; brandTheme?: string; features?: unknown; terminology?: unknown; memberArea?: unknown };
+  const theme = brandTheme(row.brandTheme);
+  const features = effectiveFeatures(row.features);
+  const memberArea = normalizeMemberArea(row.memberArea);
+  return {
+    name: organization.name,
+    slug: organization.slug,
+    appName: row.appName || null,
+    logoUrl: organization.logoUrl || null,
+    website: organization.website || null,
+    phone: organization.phone || null,
+    email: organization.primaryContactEmail || null,
+    timezone: organization.timezone,
+    joinPageMessage: organization.joinPageMessage || null,
+    theme: { key: theme.key, primary: theme.primary, primaryDark: theme.primaryDark, accent: theme.accent, accentSoft: theme.accentSoft },
+    terminology: normalizeTerminology(row.terminology),
+    features,
+    memberSignIn: memberArea.enabled,
+    memberPages: visibleMemberPages(memberArea, features),
+  };
+}
+
 async function churchProfile(req: Request, res: Response) {
   try {
-    const organization = await organizationBySlug(req.params.orgSlug);
-    const row = organization as typeof organization & { appName?: string | null; brandTheme?: string; features?: unknown; terminology?: unknown };
-    const theme = brandTheme(row.brandTheme);
+    const church = await churchProfileFor(req.params.orgSlug);
     res.setHeader('Cache-Control', 'public, max-age=30');
-    res.json({
-      church: {
-        name: organization.name,
-        slug: organization.slug,
-        appName: row.appName || null,
-        logoUrl: organization.logoUrl || null,
-        website: organization.website || null,
-        phone: organization.phone || null,
-        email: organization.primaryContactEmail || null,
-        timezone: organization.timezone,
-        joinPageMessage: organization.joinPageMessage || null,
-        theme: { key: theme.key, primary: theme.primary, primaryDark: theme.primaryDark, accent: theme.accent, accentSoft: theme.accentSoft },
-        terminology: normalizeTerminology(row.terminology),
-        features: effectiveFeatures(row.features),
-      },
-    });
+    res.json({ church });
   } catch (error) {
     sendError(res, error);
   }

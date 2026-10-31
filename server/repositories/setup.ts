@@ -229,17 +229,22 @@ export interface OrgSetupRow {
   logoUrl: string | null;
   features: unknown;
   terminology: unknown;
+  memberArea: unknown;
 }
 
 export async function orgSetup(organizationId: string): Promise<OrgSetupRow | null> {
   return prisma().organization.findUnique({
     where: { id: organizationId },
-    select: { id: true, name: true, appName: true, brandTheme: true, logoUrl: true, features: true, terminology: true },
+    select: { id: true, name: true, appName: true, brandTheme: true, logoUrl: true, features: true, terminology: true, memberArea: true },
   }) as Promise<OrgSetupRow | null>;
 }
 
 export async function saveFeatures(organizationId: string, features: Record<string, boolean>): Promise<void> {
   await prisma().organization.update({ where: { id: organizationId }, data: { features: features as Prisma.InputJsonValue } });
+}
+
+export async function saveMemberArea(organizationId: string, memberArea: unknown): Promise<void> {
+  await prisma().organization.update({ where: { id: organizationId }, data: { memberArea: memberArea as Prisma.InputJsonValue } });
 }
 
 export async function saveBrand(
@@ -267,7 +272,8 @@ export async function recordSetupEvent(
     | 'SETUP_ROLE_CREATED'
     | 'SETUP_ROLE_UPDATED'
     | 'SETUP_ROLE_DELETED'
-    | 'SETUP_ROLE_ASSIGNED',
+    | 'SETUP_ROLE_ASSIGNED'
+    | 'SETUP_MEMBER_AREA_CHANGED',
   summary: string,
   targetId?: string
 ): Promise<void> {
@@ -288,6 +294,7 @@ export async function listSetupEvents(organizationId: string, limit = 50) {
           'SETUP_ROLE_UPDATED',
           'SETUP_ROLE_DELETED',
           'SETUP_ROLE_ASSIGNED',
+          'SETUP_MEMBER_AREA_CHANGED',
         ],
       },
     },

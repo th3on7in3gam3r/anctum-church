@@ -88,12 +88,12 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             )}
             {collapsed ? null : <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
-                {isChurchMode() ? 'Church' : 'Sanctum Space'}
+                {isChurchMode() || demo.enabled ? 'Church' : 'Sanctum Space'}
               </p>
               <h4 className="text-xs font-bold text-ink truncate">
                 {organization.name}
               </h4>
-              {isChurchMode() ? null : (
+              {isChurchMode() || demo.enabled ? null : (
                 <p className="text-[11px] text-muted truncate">
                   sanctum.live/{organization.slug}
                 </p>

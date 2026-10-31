@@ -1,4 +1,4 @@
-# Sanctum Church
+# Sanctum Storehouse
 
 A church management app that each church makes its own: they switch features on and off, set their name, logo and colors, and decide what every staff role can do.
 
@@ -27,9 +27,22 @@ Open **Admin → Church setup** in the staff app. Only people whose role has *Ma
 
 Starting roles: Super Admin, Developer, Admin, Pastor, Finance, Secretary, Moderator, Media team, Ministry Leader, Volunteer. Live prayer rooms still use the original five Sanctum roles underneath; each church role maps to one by its Prayer level.
 
+## Member area
+
+Church members sign in from the church website and see their own page: profile, household, groups with live huddles, live prayer, events (RSVP as themselves) and their prayer requests. In **Church setup → Member area** the Super Admin or Developer turns member sign-in on or off, chooses which of those pages members see, and decides whether members may edit their own phone, email and birthday. A page also stays hidden while the church feature it needs is off. Members never reach staff pages.
+
+Today members sign in through the demo; real churches will sign in with a code sent to their phone or email (not built yet).
+
 ## Demo mode
 
-A sample church ("Grace Fellowship Church") that anyone can try without an account. On `/login`, pick who to be — Super Admin, Developer, Pastor, Admin, Secretary, Moderator, Ministry Leader or Volunteer — and switch any time from the sidebar. **Reset demo data** rebuilds the sample church.
+A sample church ("Grace Fellowship Church") that anyone can try without an account.
+
+- `/` — the church's own website (service times, events with RSVP, sermons, groups, leaders, visit and prayer cards)
+- `/my/sign-in` — member sign-in (Sarah, Paul or Rebecca), then `/my` for their member page
+- `/login` — staff sign-in
+- `/storehouse` — the Sanctum Storehouse product page
+
+On `/login`, pick who to be — Super Admin, Developer, Pastor, Admin, Secretary, Moderator, Ministry Leader or Volunteer — and switch any time from the sidebar. **Reset demo data** rebuilds the sample church.
 
 ```
 DEMO_MODE=true

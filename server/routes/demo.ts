@@ -1,11 +1,25 @@
 import type { Express, Request, Response } from 'express';
 import { z } from 'zod';
 import { DatabaseUnavailable, RateLimited, Unauthorized, ValidationError } from '../../shared/errors.ts';
-import { DEMO_ORG_SLUG, DEMO_PERSONAS, demoTokenFor, isDemoMode, seedDemoChurch, userIdFromDemoToken } from '../demo.ts';
+import { DEMO_MEMBER_PERSONAS, DEMO_ORG_SLUG, DEMO_PERSONAS, demoTokenFor, isDemoMode, seedDemoChurch, userIdFromDemoToken } from '../demo.ts';
 import { sendError } from '../http.ts';
 import { getPrisma } from '../prisma.ts';
 
 let lastReset = 0;
+
+async function memberPersonaList(prisma: NonNullable<ReturnType<typeof getPrisma>>) {
+  const users = await prisma.user.findMany({
+    where: { email: { in: DEMO_MEMBER_PERSONAS.map((persona) => persona.email) } },
+    select: { email: true, name: true },
+  });
+  const names = new Map(users.map((user: { email: string; name: string }) => [user.email, user.name]));
+  return DEMO_MEMBER_PERSONAS.map((persona) => ({
+    key: persona.key,
+    name: names.get(persona.email) || 'Church member',
+    roleName: 'Member',
+    description: persona.description,
+  }));
+}
 
 function requireDemo() {
   if (!isDemoMode()) throw Unauthorized('Demo mode is off.');
@@ -37,6 +51,7 @@ export function registerDemoRoutes(app: Express): void {
           roleName: roleName.get(persona.key) || persona.key,
           description: persona.description,
         })),
+        members: await memberPersonaList(prisma),
       });
     } catch (error) {
       sendError(res, error);
@@ -47,7 +62,9 @@ export function registerDemoRoutes(app: Express): void {
     try {
       const prisma = requireDemo();
       const parsed = z.object({ persona: z.string() }).safeParse(req.body ?? {});
-      const persona = parsed.success ? DEMO_PERSONAS.find((item) => item.key === parsed.data.persona) : null;
+      const persona = parsed.success
+        ? DEMO_PERSONAS.find((item) => item.key === parsed.data.persona) || DEMO_MEMBER_PERSONAS.find((item) => item.key === parsed.data.persona)
+        : null;
       if (!persona) throw new ValidationError({ persona: 'Pick who to sign in as.' });
       let user = await prisma.user.findUnique({ where: { email: persona.email }, select: { id: true } });
       if (!user) {

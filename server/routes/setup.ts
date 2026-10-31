@@ -21,6 +21,9 @@ import {
   normalizeTerminology,
   storedFeatureSwitches,
   wouldRemoveLastSuperAdmin,
+  MEMBER_PAGES,
+  normalizeMemberArea,
+  visibleMemberPages,
   type ChurchAccess,
 } from '../../shared/churchSetup.ts';
 import { resolveActorFromRequest } from '../clerkAuth.ts';
@@ -75,6 +78,11 @@ async function snapshot(actor: SetupActor) {
       terminology: normalizeTerminology(org?.terminology),
       themes: BRAND_THEMES,
     },
+    memberArea: {
+      settings: normalizeMemberArea(org?.memberArea),
+      visible: visibleMemberPages(normalizeMemberArea(org?.memberArea), effectiveFeatures(org?.features)),
+      pages: MEMBER_PAGES,
+    },
     areas: AREAS,
     roles: roles.map((role) => ({ ...role, editable: canEditRole(actor.access, role) })),
     staff: staff.map((person) => ({
@@ -121,6 +129,43 @@ async function changeFeature(req: Request, res: Response) {
       'SETUP_FEATURES_CHANGED',
       `Turned ${input.on ? 'on' : 'off'} ${feature.label}${extra}`
     );
+    res.json(await snapshot(actor));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+async function saveMemberAreaHandler(req: Request, res: Response) {
+  try {
+    const actor = await setupActor(req);
+    const input = parse(
+      z.object({
+        enabled: z.boolean().optional(),
+        canEditProfile: z.boolean().optional(),
+        page: z.string().optional(),
+        on: z.boolean().optional(),
+      }),
+      req.body
+    );
+    const org = await setup.orgSetup(actor.organizationId);
+    const current = normalizeMemberArea(org?.memberArea);
+    let summary = '';
+    if (input.enabled !== undefined) {
+      current.enabled = input.enabled;
+      summary = input.enabled ? 'Turned on member sign-in' : 'Turned off member sign-in';
+    } else if (input.canEditProfile !== undefined) {
+      current.canEditProfile = input.canEditProfile;
+      summary = input.canEditProfile ? 'Members can now edit their own details' : 'Members can no longer edit their own details';
+    } else if (input.page && input.on !== undefined) {
+      const page = MEMBER_PAGES.find((item) => item.key === input.page);
+      if (!page) throw new ValidationError({ page: 'Unknown member page.' });
+      current.pages[page.key] = input.on;
+      summary = `${input.on ? 'Showed' : 'Hid'} ${page.label} in the member area`;
+    } else {
+      throw new ValidationError({ form: 'Nothing to change.' });
+    }
+    await setup.saveMemberArea(actor.organizationId, current);
+    await setup.recordSetupEvent(actor.organizationId, actor.userId, 'SETUP_MEMBER_AREA_CHANGED', summary);
     res.json(await snapshot(actor));
   } catch (error) {
     sendError(res, error);
@@ -315,6 +360,7 @@ export function registerSetupRoutes(app: Express): void {
   app.get('/api/setup', getSetup);
   app.put('/api/setup/features', changeFeature);
   app.put('/api/setup/brand', saveBrand);
+  app.put('/api/setup/member-area', saveMemberAreaHandler);
   app.post('/api/setup/roles', createRole);
   app.patch('/api/setup/roles/:id', updateRole);
   app.delete('/api/setup/roles/:id', deleteRole);

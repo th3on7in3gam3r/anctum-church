@@ -51,6 +51,7 @@ import { youtubeImportCron } from './routes/cron.ts';
 import { registerSetupRoutes } from './routes/setup.ts';
 import { cmsAreaGuard } from './cms/areaGuard.ts';
 import { registerDemoRoutes } from './routes/demo.ts';
+import { registerMemberRoutes } from './routes/member.ts';
 
 export function createApp() {
   const app = express();
@@ -73,6 +74,7 @@ export function createApp() {
   app.get('/api/me', meHandler);
   registerDemoRoutes(app);
   registerSetupRoutes(app);
+  registerMemberRoutes(app);
   app.post('/api/spaces', createSpaceHandler);
   app.patch('/api/spaces/current', updateCurrentSpaceHandler);
   app.delete('/api/spaces/current', deleteCurrentSpaceHandler);

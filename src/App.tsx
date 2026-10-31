@@ -38,6 +38,7 @@ import { CHURCH_PUBLIC_NAME, churchSiteUrl, isChurchMode } from './lib/appMode';
 import { ChurchSetupPage } from './pages/ChurchSetupPage';
 import { StorehouseLandingPage } from './pages/StorehouseLandingPage';
 import { ChurchSitePage } from './pages/ChurchSitePage';
+import { MemberAreaPage, MemberSignInPage } from './pages/MemberAreaPage';
 import { NoAccessPanel } from './components/dashboard/NoAccessPanel';
 import { navItemAllowed, navItemForPath } from './lib/staffNav';
 
@@ -205,11 +206,17 @@ const RouterContent: React.FC = () => {
   if (currentPath === '/terms') {
     return <TermsPage onNavigate={navigate} />;
   }
+  if (import.meta.env.VITE_DEMO_MODE === 'true') {
+    // Demo: the church's own website is the home page; the product page lives at /storehouse.
+    if (currentPath === '/storehouse') return <StorehouseLandingPage onNavigate={navigate} />;
+    if (currentPath === '/my/sign-in') return <MemberSignInPage onNavigate={navigate} />;
+    if (currentPath === '/my' || currentPath.startsWith('/my/')) return <MemberAreaPage onNavigate={navigate} />;
+    if (currentPath === '/' || currentPath === '/church' || currentPath.startsWith('/church/')) return <ChurchSitePage onNavigate={navigate} />;
+  }
   if (currentPath === '/church' || currentPath.startsWith('/church/')) {
     return <ChurchSitePage onNavigate={navigate} />;
   }
   if (currentPath === '/') {
-    if (import.meta.env.VITE_DEMO_MODE === 'true') return <StorehouseLandingPage onNavigate={navigate} />;
     if (isChurchMode()) return <ChurchHomeRedirect />;
     return <LandingPage onNavigate={navigate} />;
   }

@@ -163,3 +163,25 @@ describe('dusk mode stays readable', () => {
     expect(contrast('#D5CBB8', theme.duskCard)).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+import { normalizeMemberArea, visibleMemberPages } from '../shared/churchSetup.ts';
+
+describe('member area', () => {
+  const allOn = effectiveFeatures({});
+  it('defaults to on with every page shown', () => {
+    const settings = normalizeMemberArea(null);
+    expect(settings.enabled).toBe(true);
+    expect(Object.values(visibleMemberPages(settings, allOn)).every(Boolean)).toBe(true);
+  });
+  it('hides every page when member sign-in is off', () => {
+    const settings = normalizeMemberArea({ enabled: false });
+    expect(Object.values(visibleMemberPages(settings, allOn)).some(Boolean)).toBe(false);
+  });
+  it('hides a page the church switched off, or whose feature is off', () => {
+    const settings = normalizeMemberArea({ pages: { household: false } });
+    const visible = visibleMemberPages(settings, { ...allOn, events: false });
+    expect(visible.household).toBe(false);
+    expect(visible.events).toBe(false);
+    expect(visible.groups).toBe(true);
+  });
+});

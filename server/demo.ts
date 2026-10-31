@@ -51,6 +51,13 @@ export const DEMO_PERSONAS: readonly DemoPersona[] = [
   { key: 'volunteer', name: 'Peter Mugisha', email: 'volunteer@demo.church', description: 'Sees only what a volunteer needs.' },
 ];
 
+/** Church members who can sign in to the member area. memberIndex points into the seeded member list. */
+export const DEMO_MEMBER_PERSONAS: readonly { key: string; memberIndex: number; email: string; description: string }[] = [
+  { key: 'member_sarah', memberIndex: 0, email: 'sarah.member@demo.church', description: 'Leads the worship team. Has a family of three.' },
+  { key: 'member_paul', memberIndex: 5, email: 'paul.member@demo.church', description: 'In the youth fellowship, which meets in a live huddle.' },
+  { key: 'member_rebecca', memberIndex: 10, email: 'rebecca.member@demo.church', description: 'In the women’s fellowship.' },
+];
+
 const GROUP_BLURBS = [
   'Singers and musicians who lead Sunday worship. New voices welcome.',
   'Food, games and Bible study for ages 13–25.',
@@ -151,6 +158,17 @@ export async function seedDemoChurch(prisma: PrismaClient): Promise<{ organizati
     );
   }
 
+  for (const persona of DEMO_MEMBER_PERSONAS) {
+    const member = members[persona.memberIndex];
+    const user = await prisma.user.upsert({
+      where: { email: persona.email },
+      update: { name: `${member.firstName} ${member.lastName}` },
+      create: { email: persona.email, name: `${member.firstName} ${member.lastName}` },
+    });
+    await prisma.member.update({ where: { id: member.id }, data: { userId: user.id } });
+  }
+
+  const groupIds: string[] = [];
   const groupDefs = [
     { name: 'Worship team', type: 'MINISTRY' as const, meetingTime: 'Thursdays, 6:00 p.m.' },
     { name: 'Youth fellowship', type: 'MINISTRY' as const, meetingTime: 'Saturdays, 3:00 p.m.' },
@@ -169,6 +187,7 @@ export async function seedDemoChurch(prisma: PrismaClient): Promise<{ organizati
         publicDescription: GROUP_BLURBS[g],
       },
     });
+    groupIds.push(group.id);
     for (let m = 0; m < 5; m += 1) {
       const member = members[(g * 5 + m) % members.length];
       await prisma.groupMember.create({
@@ -298,6 +317,25 @@ export async function seedDemoChurch(prisma: PrismaClient): Promise<{ organizati
       },
     });
   }
+
+  await prisma.prayerRoom.create({
+    data: {
+      organizationId: org.id,
+      name: 'Youth fellowship huddle',
+      slug: 'grace-youth-huddle',
+      description: 'The youth fellowship meets here when they can’t meet in person.',
+      kind: 'HUDDLE',
+      groupId: groupIds[1],
+      isRecurring: true,
+      recurrenceRule: 'SELECTED_DAYS',
+      selectedDays: ['Saturday'],
+      scheduledStart: '03:00 PM',
+      durationMinutes: 90,
+      timezone: 'Africa/Nairobi',
+      createdById: staffUserIds.get('ministry_leader') ?? null,
+      permanentUrl: `${appUrl}/join/grace-youth-huddle`,
+    },
+  });
 
   const superAdminId = staffUserIds.get('super_admin');
   if (superAdminId) {

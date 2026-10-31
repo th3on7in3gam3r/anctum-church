@@ -194,7 +194,7 @@ export const StorehouseLandingPage: React.FC<{ onNavigate: (path: string) => voi
 
       <header className="sticky top-0 z-40 border-b border-[#E5E6E1]/80 bg-[#F8F7F3]/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5">
-          <a href="/" onClick={go('/')} aria-label="Sanctum Storehouse home">
+          <a href="/storehouse" onClick={go('/storehouse')} aria-label="Sanctum Storehouse home">
             <StorehouseLogo />
           </a>
           <nav aria-label="Main" className="hidden items-center gap-7 text-[15px] font-semibold md:flex" style={{ color: MUTED }}>
@@ -238,7 +238,7 @@ export const StorehouseLandingPage: React.FC<{ onNavigate: (path: string) => voi
                 <a href="/login" onClick={go('/login')} className={primaryButton}>
                   Try the live demo <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </a>
-                <a href="/church" onClick={go('/church')} className={secondaryButton}>
+                <a href="/" onClick={go('/')} className={secondaryButton}>
                   See a church website
                 </a>
               </div>
@@ -379,7 +379,7 @@ export const StorehouseLandingPage: React.FC<{ onNavigate: (path: string) => voi
           />
           <div className="mt-12 grid gap-4 md:grid-cols-3">
             {[
-              { icon: Globe, title: 'Church website', body: 'Service times, events, sermons and leaders come straight from the app. Visit and prayer cards go straight back.', cta: 'See the demo church site', path: '/church' },
+              { icon: Globe, title: 'Church website', body: 'Service times, events, sermons and leaders come straight from the app. Visit and prayer cards go straight back.', cta: 'See the demo church site', path: '/' },
               { icon: Church, title: 'Sanctum Storehouse', body: 'The staff app: people, events, prayer, media and Church setup, shaped by each person’s role.', cta: 'Try the staff app', path: '/login' },
               { icon: Smartphone, title: 'Live prayer rooms', body: 'One link, any phone. People type their name and join. Leaders run the room from the control panel.', cta: 'Join a sample room', path: '/join/grace-midweek-prayer' },
             ].map((item) => (
@@ -421,7 +421,7 @@ export const StorehouseLandingPage: React.FC<{ onNavigate: (path: string) => voi
             <StorehouseMark className="h-7 w-7" /> Sanctum Storehouse
           </span>
           <nav aria-label="Footer" className="flex flex-wrap gap-5 font-semibold">
-            <a href="/church" onClick={go('/church')} className="hover:text-[#16251F]">Demo church site</a>
+            <a href="/" onClick={go('/')} className="hover:text-[#16251F]">Demo church site</a>
             <a href="/login" onClick={go('/login')} className="hover:text-[#16251F]">Staff sign in</a>
           </nav>
         </div>

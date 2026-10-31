@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, CalendarDays, Check, Clock, HandHeart, MapPin, Menu, Phone, PlayCircle, Radio, Users, X } from 'lucide-react';
 import { StorehouseMark } from '../components/common/StorehouseLogo';
+import { memberToken } from '../services/api/memberApi';
 import { cn } from '../lib/utils';
 
 /**
@@ -24,6 +25,7 @@ interface ChurchProfile {
   theme: { primary: string; primaryDark: string; accent: string; accentSoft: string };
   terminology: Record<string, string>;
   features: Record<string, boolean>;
+  memberSignIn?: boolean;
 }
 interface ServiceTime { id: string; name: string; weekday: string | null; startLabel: string; endLabel: string; place: string | null; note: string | null; showOnHome: boolean }
 interface ChurchEvent { id: string; title: string; description: string; startsAt: string; endsAt: string; location: string; rsvpEnabled: boolean }
@@ -269,6 +271,7 @@ export const ChurchSitePage: React.FC<{ onNavigate: (path: string) => void }> = 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [live, setLive] = useState<Live | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const signedIn = Boolean(memberToken());
 
   useEffect(() => {
     let cancelled = false;
@@ -336,7 +339,7 @@ export const ChurchSitePage: React.FC<{ onNavigate: (path: string) => void }> = 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F8F7F3] px-6 text-center" style={{ color: INK }}>
         <h1 className="font-display text-3xl">This church site isn’t set up yet.</h1>
-        <a href="/" onClick={(event) => { event.preventDefault(); onNavigate('/'); }} className="min-h-11 font-bold underline">Back to Sanctum Storehouse</a>
+        <a href="/storehouse" onClick={(event) => { event.preventDefault(); onNavigate('/storehouse'); }} className="min-h-11 font-bold underline">Back to Sanctum Storehouse</a>
       </div>
     );
   }
@@ -355,7 +358,7 @@ export const ChurchSitePage: React.FC<{ onNavigate: (path: string) => void }> = 
 
       <div className="bg-[#16251F] px-4 py-2 text-center text-xs font-semibold text-[#F6F1E6]">
         Demo church website ·{' '}
-        <a href="/" onClick={(event) => { event.preventDefault(); onNavigate('/'); }} className="underline">Sanctum Storehouse</a>
+        <a href="/storehouse" onClick={(event) => { event.preventDefault(); onNavigate('/storehouse'); }} className="underline">Sanctum Storehouse</a>
         {' '}· changes made in the staff app show up here
       </div>
 
@@ -377,6 +380,16 @@ export const ChurchSitePage: React.FC<{ onNavigate: (path: string) => void }> = 
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            {church.memberSignIn ? (
+              <a
+                href={signedIn ? '/my' : '/my/sign-in'}
+                onClick={(event) => { event.preventDefault(); onNavigate(signedIn ? '/my' : '/my/sign-in'); }}
+                className="inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-bold"
+                style={{ background: theme.accent, color: INK }}
+              >
+                <Users className="h-4 w-4" aria-hidden="true" /> <span className="sm:hidden">{signedIn ? 'My church' : 'Members'}</span><span className="hidden sm:inline">{signedIn ? 'My church' : 'Member sign in'}</span>
+              </a>
+            ) : null}
             {joinPath ? (
               <a href={joinPath} className="hidden min-h-11 items-center gap-2 rounded-full border border-white/40 px-4 text-sm font-bold sm:inline-flex">
                 <span className={cn('h-2 w-2 rounded-full', liveNow ? 'bg-[#7FD69B]' : 'bg-white/70')} aria-hidden="true" />
@@ -419,6 +432,11 @@ export const ChurchSitePage: React.FC<{ onNavigate: (path: string) => void }> = 
                 <a href="#visit" className="inline-flex min-h-12 items-center gap-2 rounded-full px-6 font-bold" style={{ background: theme.accent, color: INK }}>
                   Plan your visit <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </a>
+                {church.memberSignIn ? (
+                  <a href={signedIn ? '/my' : '/my/sign-in'} onClick={(event) => { event.preventDefault(); onNavigate(signedIn ? '/my' : '/my/sign-in'); }} className="inline-flex min-h-12 items-center gap-2 rounded-full border border-white/40 px-6 font-bold">
+                    {signedIn ? 'Go to My church' : 'Members: sign in'}
+                  </a>
+                ) : null}
                 {f.sermons && sermons[0] ? (
                   <a href="#sermons" className="inline-flex min-h-12 items-center gap-2 rounded-full border border-white/40 px-6 font-bold">Latest message</a>
                 ) : null}
@@ -629,7 +647,7 @@ export const ChurchSitePage: React.FC<{ onNavigate: (path: string) => void }> = 
             <a href="/login" onClick={(event) => { event.preventDefault(); onNavigate('/login'); }} className="inline-flex min-h-11 items-center rounded-full border border-white/40 px-4 font-bold">
               Staff sign in
             </a>
-            <a href="/" onClick={(event) => { event.preventDefault(); onNavigate('/'); }} className="flex items-center gap-2 text-white/80 hover:underline">
+            <a href="/storehouse" onClick={(event) => { event.preventDefault(); onNavigate('/storehouse'); }} className="flex items-center gap-2 text-white/80 hover:underline">
               <StorehouseMark className="h-6 w-6" tone="light" /> Powered by Sanctum Storehouse
             </a>
           </div>

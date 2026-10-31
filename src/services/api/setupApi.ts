@@ -6,6 +6,9 @@ import type {
   ChurchAccess,
   FeatureDefinition,
   FeatureKey,
+  MemberAreaSettings,
+  MemberPageDefinition,
+  MemberPageKey,
   TermKey,
 } from '../../../shared/churchSetup.ts';
 import { staffFetch } from './sanctumApi';
@@ -55,6 +58,7 @@ export interface SetupSnapshot {
     terminology: Record<TermKey, string>;
     themes: BrandTheme[];
   };
+  memberArea: { settings: MemberAreaSettings; visible: Record<MemberPageKey, boolean>; pages: MemberPageDefinition[] };
   areas: { key: AccessArea; label: string; note: string }[];
   roles: SetupRole[];
   staff: SetupStaff[];
@@ -70,6 +74,8 @@ export const setupApi = {
     staffFetch<SetupSnapshot>('/api/setup/features', { method: 'PUT', ...json({ key, on }) }),
   saveBrand: (input: Partial<{ name: string; appName: string; brandTheme: string; logoUrl: string; terminology: Record<string, string> }>) =>
     staffFetch<SetupSnapshot>('/api/setup/brand', { method: 'PUT', ...json(input) }),
+  saveMemberArea: (input: { enabled?: boolean; canEditProfile?: boolean; page?: MemberPageKey; on?: boolean }) =>
+    staffFetch<SetupSnapshot>('/api/setup/member-area', { method: 'PUT', ...json(input) }),
   createRole: (input: { name: string; canManageSetup?: boolean; areas?: Partial<Record<AccessArea, AccessLevel>> }) =>
     staffFetch<SetupSnapshot>('/api/setup/roles', { method: 'POST', ...json(input) }),
   updateRole: (id: string, input: { name?: string; canManageSetup?: boolean; areas?: Partial<Record<AccessArea, AccessLevel>> }) =>
@@ -83,6 +89,7 @@ export interface DemoInfo {
   enabled: boolean;
   churchName?: string | null;
   personas: { key: string; name: string; roleName: string; description: string }[];
+  members?: { key: string; name: string; roleName: string; description: string }[];
 }
 
 export const demoApi = {

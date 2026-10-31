@@ -17,10 +17,11 @@ import {
 } from '../../shared/churchSetup.ts';
 import { cn } from '../lib/utils';
 
-type Tab = 'features' | 'brand' | 'roles' | 'staff' | 'activity';
+type Tab = 'features' | 'members' | 'brand' | 'roles' | 'staff' | 'activity';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'features', label: 'Features' },
+  { key: 'members', label: 'Member area' },
   { key: 'brand', label: 'Brand' },
   { key: 'roles', label: 'Roles & access' },
   { key: 'staff', label: 'Staff' },
@@ -121,6 +122,8 @@ export const ChurchSetupPage: React.FC<{ initialTab?: Tab }> = ({ initialTab = '
         error ? null : <p className="text-sm text-muted">Loading church setup…</p>
       ) : tab === 'features' ? (
         <FeaturesTab data={data} busy={busy} run={run} confirmAction={confirmAction} />
+      ) : tab === 'members' ? (
+        <MemberAreaTab data={data} busy={busy} run={run} />
       ) : tab === 'brand' ? (
         <BrandTab data={data} busy={busy} run={run} />
       ) : tab === 'roles' ? (
@@ -220,6 +223,78 @@ const FeaturesTab: React.FC<{ data: SetupSnapshot; busy: boolean; run: RunFn; co
           })}
         </section>
       ))}
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------- member area
+
+const MemberAreaTab: React.FC<{ data: SetupSnapshot; busy: boolean; run: RunFn }> = ({ data, busy, run }) => {
+  const { settings, visible, pages } = data.memberArea;
+  const featureLabel = (key: FeatureKey) => data.features.definitions.find((item) => item.key === key)?.label || key;
+  return (
+    <div className="space-y-4">
+      <p className="max-w-2xl text-sm text-muted">
+        Choose what church members see when they sign in on your website. Staff use the staff app; members only ever see their own details and
+        the pages you turn on here.
+      </p>
+      <section className="ui-card divide-y divide-line px-5">
+        <div className="flex items-center gap-4 py-4">
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-ink">Member sign-in</p>
+            <p className="text-sm text-muted">Shows a “Member sign in” button on your website.</p>
+          </div>
+          <Switch
+            on={settings.enabled}
+            label="Member sign-in"
+            disabled={busy}
+            onChange={() => void run(() => setupApi.saveMemberArea({ enabled: !settings.enabled }), settings.enabled ? 'Member sign-in is off.' : 'Member sign-in is on.')}
+          />
+        </div>
+        <div className="flex items-center gap-4 py-4">
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-ink">Members can update their own details</p>
+            <p className="text-sm text-muted">Phone, email and birthday. Turn off if the office keeps records.</p>
+          </div>
+          <Switch
+            on={settings.canEditProfile}
+            label="Members can update their own details"
+            disabled={busy || !settings.enabled}
+            onChange={() => void run(() => setupApi.saveMemberArea({ canEditProfile: !settings.canEditProfile }), 'Saved.')}
+          />
+        </div>
+      </section>
+      <section className="ui-card px-5 py-2">
+        <h2 className="pt-3 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-muted">Pages members can see</h2>
+        {pages.map((page) => {
+          const missing = page.needs.filter((need) => !data.features.effective[need]);
+          return (
+            <div key={page.key} className="flex items-center gap-4 border-t border-line py-3.5 first-of-type:border-t-0">
+              <div className="min-w-0 flex-1">
+                <p className="flex flex-wrap items-center gap-2 font-bold text-ink">
+                  {page.label}
+                  {visible[page.key] ? <span className="rounded-full bg-green/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink">Visible</span> : null}
+                </p>
+                <p className="text-sm text-muted">{page.description}</p>
+                {missing.length ? (
+                  <p className="mt-0.5 text-xs font-bold text-gold-ink dark:text-gold">Needs {missing.map(featureLabel).join(' and ')} turned on in Features</p>
+                ) : null}
+              </div>
+              <Switch
+                on={settings.pages[page.key]}
+                label={page.label}
+                disabled={busy || !settings.enabled}
+                onChange={() =>
+                  void run(
+                    () => setupApi.saveMemberArea({ page: page.key, on: !settings.pages[page.key] }),
+                    `${page.label} ${settings.pages[page.key] ? 'hidden from' : 'shown to'} members.`
+                  )
+                }
+              />
+            </div>
+          );
+        })}
+      </section>
     </div>
   );
 };

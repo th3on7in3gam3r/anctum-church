@@ -43,7 +43,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
       <main className="ui-card w-full max-w-[26.5rem] rounded-[26px] px-6 py-8 shadow-[0_24px_70px_rgba(8,16,12,0.28)] sm:px-8 sm:py-10">
         <div className="mb-6 flex justify-center">
           {demo.enabled ? (
-            <button type="button" onClick={() => onNavigate('/')} className="cursor-pointer rounded-2xl bg-[#F8F7F3] px-3 py-2" aria-label="Sanctum Storehouse home">
+            <button type="button" onClick={() => onNavigate('/storehouse')} className="cursor-pointer rounded-2xl bg-[#F8F7F3] px-3 py-2" aria-label="Sanctum Storehouse home">
               <StorehouseLogo />
             </button>
           ) : church ? (
@@ -127,8 +127,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
       <footer className="mt-6 w-full max-w-[26.5rem] space-y-2 text-center text-xs text-muted">
         {demo.enabled ? (
           <p className="flex flex-wrap justify-center gap-4">
-            <button type="button" onClick={() => onNavigate('/')} className="min-h-11 cursor-pointer font-semibold text-ink hover:underline">About Sanctum Storehouse</button>
-            <button type="button" onClick={() => onNavigate('/church')} className="min-h-11 cursor-pointer font-semibold text-ink hover:underline">Demo church website</button>
+            <button type="button" onClick={() => onNavigate('/storehouse')} className="min-h-11 cursor-pointer font-semibold text-ink hover:underline">About Sanctum Storehouse</button>
+            <button type="button" onClick={() => onNavigate('/')} className="min-h-11 cursor-pointer font-semibold text-ink hover:underline">Church website</button>
+            <button type="button" onClick={() => onNavigate('/my/sign-in')} className="min-h-11 cursor-pointer font-semibold text-ink hover:underline">Member sign in</button>
           </p>
         ) : church ? (
           <a href={site} className="font-semibold text-ink hover:underline">Back to the website</a>

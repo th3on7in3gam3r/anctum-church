@@ -339,3 +339,53 @@ export function normalizeTerminology(raw: unknown): Record<TermKey, string> {
   }
   return out;
 }
+
+// ---------------------------------------------------------------- member area
+
+export type MemberPageKey = 'profile' | 'household' | 'groups' | 'livePrayer' | 'events' | 'prayer';
+
+export interface MemberPageDefinition {
+  key: MemberPageKey;
+  label: string;
+  description: string;
+  /** Church features this page needs to be on. */
+  needs: FeatureKey[];
+}
+
+export const MEMBER_PAGES: readonly MemberPageDefinition[] = [
+  { key: 'profile', label: 'My profile', description: 'Name, phone, email and birthday', needs: ['members'] },
+  { key: 'household', label: 'My household', description: 'The other people in their family', needs: ['members'] },
+  { key: 'groups', label: 'My groups & huddles', description: 'Their groups, meeting times and live huddles', needs: ['members'] },
+  { key: 'livePrayer', label: 'Live prayer', description: 'Join the church’s prayer rooms as themselves', needs: ['prayerRooms'] },
+  { key: 'events', label: 'Events', description: 'RSVP as themselves and see what they signed up for', needs: ['events'] },
+  { key: 'prayer', label: 'Prayer requests', description: 'Send a request and see the ones they sent', needs: ['visitors'] },
+];
+
+export interface MemberAreaSettings {
+  /** Lets members sign in at all. */
+  enabled: boolean;
+  pages: Record<MemberPageKey, boolean>;
+  /** Members may change their own phone, email and birthday. */
+  canEditProfile: boolean;
+}
+
+export function normalizeMemberArea(raw: unknown): MemberAreaSettings {
+  const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  const pagesRaw = source.pages && typeof source.pages === 'object' ? (source.pages as Record<string, unknown>) : {};
+  const pages = {} as Record<MemberPageKey, boolean>;
+  for (const page of MEMBER_PAGES) pages[page.key] = typeof pagesRaw[page.key] === 'boolean' ? (pagesRaw[page.key] as boolean) : true;
+  return {
+    enabled: typeof source.enabled === 'boolean' ? source.enabled : true,
+    pages,
+    canEditProfile: typeof source.canEditProfile === 'boolean' ? source.canEditProfile : true,
+  };
+}
+
+/** What a member actually sees: the area is on, the page is on, and the church features it needs are on. */
+export function visibleMemberPages(settings: MemberAreaSettings, features: Record<FeatureKey, boolean>): Record<MemberPageKey, boolean> {
+  const out = {} as Record<MemberPageKey, boolean>;
+  for (const page of MEMBER_PAGES) {
+    out[page.key] = settings.enabled && settings.pages[page.key] && page.needs.every((need) => features[need]);
+  }
+  return out;
+}
