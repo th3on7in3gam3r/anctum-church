@@ -1,0 +1,95 @@
+databases:
+  - name: sanctum-postgres
+    plan: basic-256mb
+    databaseName: sanctum_live
+    user: sanctum
+
+services:
+  - type: web
+    name: sanctum
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    preDeployCommand: npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
+      - key: DEPLOY_ENV
+        value: staging
+      - key: ALLOW_PLACEHOLDER
+        value: "true"
+      # Replace this direct URL with a pooled URL that includes connection_limit=10&pool_timeout=20 before the first boot.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sanctum-postgres
+          property: connectionString
+      - key: SANCTUM_MODE
+        value: church
+      - key: PUBLIC_SITE_URL
+        sync: false
+      - key: PUBLIC_SITE_ORIGINS
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: SITE_REVALIDATE_URL
+        sync: false
+      - key: REVALIDATE_SECRET
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_SENTRY_DSN
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: GALLERY_REVIEW_FROM
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_AUTH_TOKEN
+        sync: false
+      - key: SENTRY_ORG
+        sync: false
+      - key: SENTRY_PROJECT_API
+        sync: false
+      - key: SENTRY_PROJECT_SANCTUM
+        sync: false
+
+  - type: cron
+    name: youtube-import
+    runtime: node
+    schedule: "0 */6 * * *"
+    buildCommand: node -e "process.exit(0)"
+    startCommand: node scripts/youtube-cron.mjs
+    envVars:
+      - key: CRON_SECRET
+        fromService:
+          name: sanctum
+          type: web
+          envVarKey: CRON_SECRET
+      - key: APP_URL
+        fromService:
+          name: sanctum
+          type: web
+          envVarKey: APP_URL

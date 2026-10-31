@@ -1,0 +1,853 @@
+// Sanctum Live™ — Phase 1B.1 database foundation (PostgreSQL / Prisma)
+// Client runtime lives in server/ only. Never import Prisma from src/.
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "rhel-openssl-3.0.x"]
+}
+
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  PRAYER_LEADER
+  TECHNICAL_ADMIN
+  MEDIA
+}
+
+enum SessionRole {
+  HOST
+  MODERATOR
+  SPEAKER
+  LISTENER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum RoomType {
+  AUDIO_PRAYER
+  PRAYER_LEADER_VIDEO
+  EVENT
+}
+
+enum PrayerRoomKind {
+  CORPORATE
+  HUDDLE
+}
+
+enum SpeakerPermissionMode {
+  ADMIN_APPROVAL_REQUIRED
+  PRAYER_LEADERS
+  OPEN_MICROPHONE
+}
+
+enum RoomLifecycleStatus {
+  SCHEDULED
+  WAITING
+  LIVE
+  ARCHIVED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  WAITING
+  STARTING
+  LIVE
+  ENDING
+  ENDED
+  CANCELLED
+}
+
+enum RaisedHandStatus {
+  WAITING
+  INVITED
+  DISMISSED
+  RESOLVED
+}
+
+enum PrayerRequestStatus {
+  PENDING
+  ANSWERED
+  ARCHIVED
+}
+
+enum SpeakerInvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  DECLINED
+  EXPIRED
+}
+
+enum PrayerRoomHostRole {
+  SERMON_LEADER
+  CO_HOST
+}
+
+enum AuditAction {
+  ROOM_CREATED
+  ROOM_UPDATED
+  ROOM_ARCHIVED
+  SESSION_STARTED
+  SESSION_ENDED
+  SESSION_CANCELLED
+  PARTICIPANT_JOINED
+  PARTICIPANT_REMOVED
+  HAND_RAISED
+  SPEAKER_INVITED
+  SPEAKER_GRANTED
+  SPEAKER_REVOKED
+  SPEAKER_TRANSFERRED
+  ROLE_CHANGED
+  CMS_CREATED
+  CMS_UPDATED
+  CMS_DELETED
+  ALBUM_CREATED
+  ALBUM_SUBMITTED
+  ALBUM_PUBLISHED
+  ALBUM_ARCHIVED
+  PHOTO_CONSENT_CONFIRMED
+  PHOTO_HIDDEN
+  VIDEO_ADDED
+  SETUP_FEATURES_CHANGED
+  SETUP_BRAND_CHANGED
+  SETUP_ROLE_CREATED
+  SETUP_ROLE_UPDATED
+  SETUP_ROLE_DELETED
+  SETUP_ROLE_ASSIGNED
+}
+
+enum ChurchMemberStatus {
+  VISITOR
+  REGULAR
+  MEMBER
+  INACTIVE
+}
+
+enum ChurchGroupType {
+  MINISTRY
+  CELL
+  DEPARTMENT
+  CHOIR
+  OTHER
+}
+
+enum GroupMemberRole {
+  LEADER
+  MEMBER
+}
+
+enum VisitorCardSource {
+  PLAN_A_VISIT
+  CONTACT
+  PRAYER
+}
+
+enum VisitorCardStatus {
+  NEW
+  CONTACTED
+  DONE
+}
+
+model Organization {
+  id                        String   @id @default(cuid())
+  name                      String
+  slug                      String   @unique
+  logoUrl                   String?
+  country                   String   @default("Uganda")
+  timezone                  String   @default("Africa/Kampala")
+  website                   String?
+  primaryContactName        String
+  primaryContactEmail       String
+  phone                     String?
+  accentColor               String?  @default("#203C32")
+  youtubeChannelId          String?
+  youtubeChannelInput       String?
+  defaultSermonSpeaker      String?  @default("Pastor GraceLove Hiire")
+  speakerAliases            String[] @default([])
+  joinPageMessage           String?  @default("Join your church family in prayer.")
+  defaultRoomType           RoomType @default(AUDIO_PRAYER)
+  defaultSpeakerPermission  SpeakerPermissionMode @default(ADMIN_APPROVAL_REQUIRED)
+  defaultRecording          Boolean  @default(false)
+  defaultExpectedAttendance Int      @default(1000)
+  appName                   String?
+  brandTheme                String   @default("forest")
+  features                  Json?
+  terminology               Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  memberships OrganizationMembership[]
+  prayerRooms PrayerRoom[]
+  auditEvents AuditEvent[]
+  households Household[]
+  members Member[]
+  groups Group[]
+  leaders Leader[]
+  faqs Faq[]
+  pages Page[]
+  announcements Announcement[]
+  events Event[]
+  sermons Sermon[]
+  ignoredVideos IgnoredVideo[]
+  visitorCards VisitorCard[]
+  albums Album[]
+  videos Video[]
+  serviceTimes ServiceTime[]
+  churchRoles ChurchRole[]
+
+  @@index([slug])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  clerkUserId  String?  @unique
+  name         String
+  email        String   @unique
+  passwordHash String?
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships          OrganizationMembership[]
+  createdRooms         PrayerRoom[]             @relation("RoomCreator")
+  sessionParticipations SessionParticipant[]
+  invitedSpeakers      SpeakerInvitation[]      @relation("SpeakerInviter")
+  auditEvents          AuditEvent[]
+  hostedRooms          PrayerRoomHost[]
+  churchMembers        Member[]
+  createdAlbums        Album[]                  @relation("AlbumCreator")
+  publishedAlbums      Album[]                  @relation("AlbumPublisher")
+  uploadedPhotos       Photo[]                  @relation("PhotoUploader")
+  confirmedPhotos      Photo[]                  @relation("PhotoConsent")
+
+  @@index([email])
+}
+
+model OrganizationMembership {
+  id             String             @id @default(cuid())
+  organizationId String
+  userId         String
+  role              OrganizationRole
+  status            MembershipStatus @default(ACTIVE)
+  canPublishGallery Boolean          @default(false)
+  churchRoleId   String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  churchRole   ChurchRole?  @relation(fields: [churchRoleId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([status])
+  @@index([churchRoleId])
+}
+
+/// A church's own role: a saved set of area levels. Rank 1 is the top.
+model ChurchRole {
+  id             String   @id @default(cuid())
+  organizationId String
+  key            String
+  name           String
+  rank           Int
+  canManageSetup Boolean  @default(false)
+  locked         Boolean  @default(false)
+  areas          Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  memberships  OrganizationMembership[]
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
+}
+
+model PrayerRoom {
+  id                 String                @id @default(cuid())
+  organizationId     String
+  name               String
+  slug               String
+  description        String?
+  logoUrl            String?
+  roomType           RoomType              @default(AUDIO_PRAYER)
+  expectedAttendance Int                   @default(1000)
+  speakerPermission  SpeakerPermissionMode @default(ADMIN_APPROVAL_REQUIRED)
+  isRecurring        Boolean               @default(false)
+  recurrenceRule     String?
+  selectedDays       String[]              @default([])
+  oneTimeDate        String?
+  durationMinutes    Int                   @default(60)
+  scheduledStart     String                @default("05:00 AM")
+  timezone           String                @default("Africa/Kampala")
+  recordingEnabled   Boolean               @default(false)
+  passcodeHash       String?
+  allowGuests        Boolean               @default(true)
+  prayerRequestsEnabled Boolean            @default(true)
+  anonymousRequestsAllowed Boolean         @default(true)
+  chatEnabled        Boolean               @default(true)
+  status             RoomLifecycleStatus   @default(SCHEDULED)
+  kind               PrayerRoomKind        @default(CORPORATE)
+  groupId            String?
+  livekitRoomName    String?
+  permanentUrl       String
+  createdById        String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?            @relation("RoomCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  group        Group?           @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  sessions     PrayerSession[]
+  hosts        PrayerRoomHost[]
+  events       Event[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([slug])
+  @@index([status])
+  @@index([createdAt])
+  @@index([groupId])
+}
+
+model PrayerRoomHost {
+  id     String             @id @default(cuid())
+  roomId String
+  userId String
+  role   PrayerRoomHostRole
+
+  room PrayerRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+}
+
+model PrayerSession {
+  id                         String        @id @default(cuid())
+  prayerRoomId               String
+  status                     SessionStatus @default(SCHEDULED)
+  scheduledStart             DateTime?
+  actualStart                DateTime?
+  endedAt                    DateTime?
+  livekitRoomName            String?
+  sermonLeaderName           String        @default("")
+  activeSpeakerParticipantId String?
+  peakConcurrentParticipants Int           @default(0)
+  congregationMuted          Boolean       @default(true)
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
+
+  prayerRoom          PrayerRoom           @relation(fields: [prayerRoomId], references: [id], onDelete: Restrict)
+  participants        SessionParticipant[]
+  raisedHands         RaisedHand[]
+  prayerRequests      PrayerRequest[]
+  speakerInvitations  SpeakerInvitation[]
+  chatMessages        SessionChatMessage[]
+  auditEvents         AuditEvent[]
+
+  @@index([prayerRoomId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model SessionChatMessage {
+  id          String   @id @default(cuid())
+  sessionId   String
+  displayName String
+  body        String
+  createdAt   DateTime @default(now())
+
+  session PrayerSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
+
+model SessionParticipant {
+  id               String      @id @default(cuid())
+  sessionId        String
+  userId           String?
+  guestName        String?
+  realtimeIdentity String
+  role             SessionRole @default(LISTENER)
+  baseRole         SessionRole @default(LISTENER)
+  joinedAt         DateTime    @default(now())
+  leftAt           DateTime?
+  createdAt        DateTime    @default(now())
+
+  session            PrayerSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user               User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  raisedHands        RaisedHand[]
+  prayerRequests     PrayerRequest[]
+  speakerInvitations SpeakerInvitation[]
+
+  @@unique([sessionId, realtimeIdentity])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([role])
+}
+
+model RaisedHand {
+  id            String           @id @default(cuid())
+  sessionId     String
+  participantId String
+  status        RaisedHandStatus @default(WAITING)
+  raisedAt      DateTime         @default(now())
+  resolvedAt    DateTime?
+
+  session     PrayerSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participant SessionParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([participantId])
+  @@index([status])
+  @@index([raisedAt])
+}
+
+model SpeakerInvitation {
+  id            String                   @id @default(cuid())
+  sessionId     String
+  participantId String
+  invitedById   String?
+  status        SpeakerInvitationStatus  @default(PENDING)
+  createdAt     DateTime                 @default(now())
+  acceptedAt    DateTime?
+  revokedAt     DateTime?
+
+  session     PrayerSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participant SessionParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  invitedBy   User?              @relation("SpeakerInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([participantId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PrayerRequest {
+  id            String              @id @default(cuid())
+  sessionId     String?
+  participantId String?
+  request       String
+  isPrivate     Boolean             @default(false)
+  status        PrayerRequestStatus @default(PENDING)
+  adminNote     String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  session     PrayerSession?      @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  participant SessionParticipant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([status])
+  @@index([isPrivate])
+  @@index([createdAt])
+}
+
+model AuditEvent {
+  id             String      @id @default(cuid())
+  organizationId String?
+  sessionId      String?
+  actorId        String?
+  action         AuditAction
+  targetId       String?
+  metadata       Json?
+  createdAt      DateTime    @default(now())
+
+  organization Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  session      PrayerSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  actor        User?          @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([sessionId])
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model WebhookEvent {
+  id        String   @id @default(cuid())
+  eventId   String   @unique
+  eventType String
+  roomName  String?
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+model Household {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  address        String?
+  phone          String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members      Member[]
+
+  @@index([organizationId])
+}
+
+model Member {
+  id             String             @id @default(cuid())
+  organizationId String
+  householdId    String?
+  userId         String?
+  firstName      String
+  lastName       String
+  phone          String?
+  email          String?
+  gender         String?
+  birthMonthDay  String?
+  status         ChurchMemberStatus @default(VISITOR)
+  joinedAt       DateTime?
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  household    Household?    @relation(fields: [householdId], references: [id], onDelete: SetNull)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  groups       GroupMember[]
+  ledGroups    Group[]       @relation("GroupLeader")
+
+  @@unique([organizationId, userId])
+  @@index([organizationId, phone])
+  @@index([organizationId, status])
+}
+
+model Group {
+  id             String          @id @default(cuid())
+  organizationId String
+  name           String
+  type           ChurchGroupType @default(OTHER)
+  leaderMemberId String?
+  description        String?
+  showOnWebsite      Boolean @default(false)
+  publicDescription String?
+  meetingTime        String?
+  imageUrl           String?
+  sortOrder          Int     @default(0)
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  leader       Member?       @relation("GroupLeader", fields: [leaderMemberId], references: [id], onDelete: SetNull)
+  members      GroupMember[]
+  albums       Album[]
+  prayerRooms  PrayerRoom[]
+
+  @@index([organizationId])
+}
+
+model GroupMember {
+  groupId  String
+  memberId String
+  role     GroupMemberRole @default(MEMBER)
+
+  group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, memberId])
+  @@index([memberId])
+}
+
+model ServiceTime {
+  id             String  @id @default(cuid())
+  organizationId String
+  name           String
+  homeLabel      String?
+  cadence        String
+  weekday        String?
+  opens          String
+  closes         String
+  startLabel     String
+  endLabel       String
+  place          String?
+  note           String?
+  showOnHome     Boolean @default(false)
+  sortOrder      Int     @default(0)
+  isPlaceholder  Boolean @default(false)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, name])
+  @@index([organizationId, sortOrder])
+}
+
+model Page {
+  id             String   @id @default(cuid())
+  organizationId String
+  slug           String
+  title          String
+  body           Json
+  heroImageUrl   String?
+  isPublished    Boolean  @default(false)
+  isPlaceholder  Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+}
+
+model Announcement {
+  id             String    @id @default(cuid())
+  organizationId String
+  title          String
+  body           String
+  startsAt       DateTime
+  endsAt         DateTime?
+  isPinned       Boolean   @default(false)
+  isPlaceholder  Boolean   @default(false)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, startsAt])
+}
+
+model Event {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String
+  description    String   @default("")
+  startsAt       DateTime
+  endsAt         DateTime
+  location       String
+  imageUrl       String?
+  rsvpEnabled    Boolean  @default(false)
+  isPlaceholder  Boolean  @default(false)
+  prayerRoomId   String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  prayerRoom   PrayerRoom?  @relation(fields: [prayerRoomId], references: [id], onDelete: SetNull)
+  rsvps        EventRsvp[]
+  albums       Album[]
+
+  @@index([organizationId, startsAt])
+  @@index([prayerRoomId])
+}
+
+model EventRsvp {
+  id        String   @id @default(cuid())
+  eventId   String
+  name      String
+  phone     String
+  count     Int      @default(1)
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+enum SermonStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Sermon {
+  id             String       @id @default(cuid())
+  organizationId String
+  title          String
+  sourceTitle    String?
+  speaker        String
+  seriesName     String?
+  scripture      String?
+  preachedOn     DateTime     @db.Date
+  youtubeUrl     String?
+  youtubeVideoId String?
+  thumbnailUrl   String?
+  audioUrl       String?
+  notes          String?
+  // TODO: drop Sermon.isPublished once nothing reads it. status is the source of truth.
+  isPublished    Boolean      @default(false)
+  status         SermonStatus @default(DRAFT)
+  isPlaceholder  Boolean      @default(false)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  albums       Album[]
+
+  @@unique([organizationId, youtubeVideoId])
+  @@index([organizationId, preachedOn])
+}
+
+model IgnoredVideo {
+  id             String   @id @default(cuid())
+  organizationId String
+  youtubeVideoId String
+  title          String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, youtubeVideoId])
+  @@index([organizationId])
+}
+
+model VisitorCard {
+  id             String            @id @default(cuid())
+  organizationId String
+  name           String
+  phone          String
+  email          String?
+  message        String?
+  service        String?
+  source         VisitorCardSource
+  status         VisitorCardStatus @default(NEW)
+  createdAt      DateTime          @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
+}
+
+model Leader {
+  id             String  @id @default(cuid())
+  organizationId String
+  name           String
+  role           String
+  photoUrl       String?
+  bio            String?
+  sortOrder      Int     @default(0)
+  isPlaceholder  Boolean @default(false)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model Faq {
+  id             String  @id @default(cuid())
+  organizationId String
+  question       String
+  answer         String
+  sortOrder      Int     @default(0)
+  isPlaceholder  Boolean @default(false)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+enum AlbumStatus {
+  DRAFT
+  SUBMITTED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AlbumCategory {
+  SERVICE
+  EVENT
+  MINISTRY
+  OTHER
+}
+
+enum VideoProvider {
+  YOUTUBE
+  TIKTOK
+}
+
+enum VideoOrientation {
+  LANDSCAPE
+  VERTICAL
+}
+
+model Album {
+  id             String         @id @default(cuid())
+  organizationId String
+  title          String
+  slug           String
+  category       AlbumCategory
+  date           DateTime
+  description    String?
+  status         AlbumStatus    @default(DRAFT)
+  isFeatured     Boolean        @default(false)
+  coverPhotoId   String?        @unique
+  eventId        String?
+  sermonId       String?
+  groupId        String?
+  createdById    String?
+  submittedAt    DateTime?
+  publishedAt    DateTime?
+  publishedById  String?
+  sortOrder      Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  coverPhoto   Photo?       @relation("AlbumCover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
+  photos       Photo[]      @relation("AlbumPhotos")
+  videos       Video[]
+  event        Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  sermon       Sermon?      @relation(fields: [sermonId], references: [id], onDelete: SetNull)
+  group        Group?       @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdBy    User?        @relation("AlbumCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  publishedBy  User?        @relation("AlbumPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, status, date])
+}
+
+model Photo {
+  id                   String    @id @default(cuid())
+  albumId              String
+  storageKey           String
+  url                  String
+  width                Int
+  height               Int
+  blurDataUrl          String?
+  alt                  String
+  caption              String?
+  sortOrder            Int       @default(0)
+  isHidden             Boolean   @default(false)
+  hasMinors            Boolean   @default(false)
+  consentConfirmed     Boolean   @default(false)
+  consentConfirmedById String?
+  consentConfirmedAt   DateTime?
+  uploadedById         String?
+  createdAt            DateTime  @default(now())
+
+  album              Album  @relation("AlbumPhotos", fields: [albumId], references: [id], onDelete: Cascade)
+  coverFor           Album? @relation("AlbumCover")
+  consentConfirmedBy User?  @relation("PhotoConsent", fields: [consentConfirmedById], references: [id], onDelete: SetNull)
+  uploadedBy         User?  @relation("PhotoUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([albumId, sortOrder])
+}
+
+model Video {
+  id             String           @id @default(cuid())
+  organizationId String
+  albumId        String?
+  provider       VideoProvider
+  externalId     String
+  title          String
+  thumbnailUrl   String
+  orientation    VideoOrientation
+  isPublished    Boolean          @default(false)
+  sortOrder      Int              @default(0)
+  createdAt      DateTime         @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  album        Album?       @relation(fields: [albumId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, provider, externalId])
+  @@index([organizationId, isPublished])
+}

@@ -1,0 +1,97 @@
+/*
+ * Official lockup. The mark is the only image. The words are real text.
+ * Dusk (and the site header, which sits on forest) uses cream and gold.
+ * Light uses ink and the darker gold that clears AA on cream.
+ */
+:root,
+[data-theme='dusk'],
+[data-staff-theme='dusk'] {
+  --text-strong: #ede6d6;
+  --gold: #c9a35a;
+}
+
+[data-theme='light'],
+[data-staff-theme='light'] {
+  --text-strong: #12231c;
+  --gold: #7a5a22;
+}
+
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-lockup[data-size='sm'] {
+  gap: 10px;
+}
+
+.brand-mark {
+  display: block;
+  flex: none;
+  width: var(--brand-mark);
+  height: var(--brand-mark);
+  object-fit: contain;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.brand-lockup[data-size='sm'] { --brand-mark: 32px; }
+.brand-lockup[data-size='md'] { --brand-mark: 44px; }
+.brand-lockup[data-size='lg'] { --brand-mark: 64px; }
+
+.brand-words {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.brand-name {
+  font-family: var(--font-fraunces), Fraunces, Georgia, 'Times New Roman', serif;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
+}
+
+.brand-lockup[data-size='sm'] .brand-name { font-size: 18px; }
+.brand-lockup[data-size='md'] .brand-name { font-size: 22px; }
+.brand-lockup[data-size='lg'] .brand-name { font-size: 30px; }
+
+.brand-sub {
+  margin-top: 4px;
+  padding-right: 0.22em;
+  font-family: var(--font-manrope), Manrope, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.brand-lockup[data-size='sm'] .brand-sub { font-size: 10px; }
+.brand-lockup[data-size='md'] .brand-sub { font-size: 11px; }
+.brand-lockup[data-size='lg'] .brand-sub { font-size: 12px; }
+
+.brand-tagline {
+  margin-top: 0.75rem;
+  font-family: var(--font-fraunces), Fraunces, Georgia, 'Times New Roman', serif;
+  font-size: 1.25rem;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--text-strong);
+}
+
+@media (max-width: 379px) {
+  .brand-lockup[data-size='md'] {
+    gap: 10px;
+    --brand-mark: 32px;
+  }
+  .brand-lockup[data-size='md'] .brand-name { font-size: 18px; }
+  .brand-lockup[data-size='md'] .brand-sub { font-size: 10px; }
+}

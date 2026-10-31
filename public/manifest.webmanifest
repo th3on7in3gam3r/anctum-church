@@ -1,0 +1,21 @@
+{
+  "name": "Promised Land Christian Center",
+  "short_name": "Promised Land",
+  "description": "Promised Land Christian Center in Kampala. Worship, prayer, and community.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#12231C",
+  "theme_color": "#12231C",
+  "icons": [
+    {
+      "src": "/brand/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/brand/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

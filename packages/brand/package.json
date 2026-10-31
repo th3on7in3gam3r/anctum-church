@@ -1,0 +1,14 @@
+{
+  "name": "@plcc/brand",
+  "private": true,
+  "version": "1.0.0",
+  "exports": {
+    "./tokens.css": "./tokens.css",
+    "./lockup.css": "./lockup.css",
+    "./brand": "./brand.ts",
+    "./BrandLockup": "./BrandLockup.tsx"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Sanctum Live",
+  "description": "Church-focused live prayer and gathering platform designed for large congregations with simplified one-tap access and controlled speaker moderation.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

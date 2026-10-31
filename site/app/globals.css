@@ -1,0 +1,75 @@
+@import "tailwindcss";
+@import "@plcc/brand/tokens.css";
+@import "@plcc/brand/lockup.css";
+
+:root {
+  --tap: 2.75rem;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+.site-button {
+  display: inline-flex;
+  min-height: var(--tap);
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding-inline: 1.25rem;
+  font-weight: 600;
+}
+
+.page-wrap {
+  margin-inline: auto;
+  max-width: 48rem;
+  padding: 3.5rem 1.25rem 4rem;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.75rem, 6vw, 4rem);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.glow-tile {
+  background:
+    radial-gradient(circle at 72% 18%, rgba(201, 163, 90, 0.38), transparent 46%),
+    linear-gradient(160deg, #1d372c, #12231c 55%, #0d1a14);
+}
+
+@media (min-width: 900px) {
+  .site-button.mobile-only {
+    display: none;
+  }
+}
+
+@keyframes plcc-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.plcc-marquee {
+  animation: plcc-scroll 48s linear infinite;
+}
+
+.plcc-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .plcc-marquee {
+    animation: none;
+  }
+}

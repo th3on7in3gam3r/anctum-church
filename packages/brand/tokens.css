@@ -1,0 +1,262 @@
+/*
+ * Sanctuary at Dusk. One source of truth for the church site and Sanctum.
+ * Tailwind v4: each app imports this after `@import "tailwindcss"`.
+ */
+
+@theme {
+  --color-forest-950: #0d1a14;
+  --color-forest-900: #12231c;
+  --color-forest-800: #1d372c;
+  --color-footer: #0a1611;
+  --color-gold: #c9a35a;
+  --color-gold-light: #e4c98f;
+  --color-gold-text: #8a6a2e;
+  --color-gold-ink: #8a6a2e;
+  --color-cream: #f5f1e8;
+  --color-cream-50: #f5eedd;
+  --color-sand: #ede6d6;
+  --color-on-dark: #ede6d6;
+  --color-muted-dark: #b9b09c;
+  --color-ink: #16251f;
+  --color-live: #7fd69b;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --radius-pill: 999px;
+  --radius-card: 26px;
+  --shadow-sanctum: 0 24px 60px rgba(13, 26, 20, 0.18);
+  --shadow-glow: 0 0 80px rgba(201, 163, 90, 0.28);
+  --ease-sanctum: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-sanctum: 280ms;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+}
+
+/*
+ * Public Sanctum themes. Components read only these semantic variables.
+ * Dusk is the default. Light is the cream sanctuary.
+ */
+[data-theme="dusk"] {
+  --bg: #10241c;
+  --surface: #1a3328;
+  --surface-raised: #243e32;
+  --text: #f6f1e6;
+  --text-muted: #d5cbb8;
+  --border: #5c7a6a;
+  --accent: #c9a35a;
+  --accent-text: #16251f;
+  --chip-bg: #2c4a3c;
+  --chip-text: #f6f1e6;
+  --danger-bg: #4a2424;
+  --danger-text: #ffd2ce;
+  --raise-text: #c9a35a;
+  color: var(--text);
+}
+
+[data-theme="light"] {
+  --bg: #f5f1e8;
+  --surface: #fffcf6;
+  --surface-raised: #ffffff;
+  --text: #16251f;
+  --text-muted: #3e5148;
+  --border: #cdbfa8;
+  --accent: #c9a35a;
+  --accent-text: #16251f;
+  --chip-bg: #e8e0d2;
+  --chip-text: #16251f;
+  --danger-bg: #f8e6e4;
+  --danger-text: #7a2422;
+  --raise-text: #7a5a22;
+  color: var(--text);
+}
+
+.sanctum-screen {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+[data-theme="dusk"].sanctum-screen {
+  background:
+    radial-gradient(circle at 72% 18%, rgba(201, 163, 90, 0.38), transparent 46%),
+    linear-gradient(160deg, #1d372c, #12231c 55%, #0d1a14);
+}
+
+[data-theme] .eyebrow {
+  color: var(--text-muted);
+}
+
+[data-theme] :where(h1, h2, h3, p, span, a, button, label, strong, small, li, select, input, textarea, svg) {
+  color: var(--text);
+}
+
+.sanctum-surface {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.sanctum-raised {
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.sanctum-muted,
+[data-theme] .sanctum-muted,
+[data-theme] .sanctum-muted :where(span, p, a, button, strong, svg) {
+  color: var(--text-muted);
+}
+
+.sanctum-chip,
+[data-theme] .sanctum-chip {
+  background: var(--chip-bg);
+  color: var(--chip-text);
+  border-color: var(--border);
+}
+
+[data-theme] .sanctum-chip :where(span, strong, svg) {
+  outline: none;
+  color: var(--chip-text);
+}
+
+.sanctum-accent,
+[data-theme] .sanctum-accent {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.sanctum-outline,
+[data-theme] .sanctum-outline {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.sanctum-raise,
+[data-theme] .sanctum-raise {
+  background: transparent;
+  color: var(--raise-text);
+  border: 1.5px solid var(--accent);
+}
+
+.sanctum-danger,
+[data-theme] .sanctum-danger {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+[data-theme] .sanctum-accent :where(span, svg) {
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--accent-text);
+}
+
+[data-theme] .sanctum-outline :where(span, svg) {
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--text);
+}
+
+[data-theme] .sanctum-raise :where(span, svg) {
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--raise-text);
+}
+
+[data-theme] .sanctum-danger :where(span, svg) {
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--danger-text);
+}
+
+.sanctum-icon,
+[data-theme] .sanctum-icon {
+  background: transparent;
+  color: var(--text);
+}
+
+[data-theme] .sanctum-icon :where(svg) {
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--text);
+}
+
+[data-theme] :where(button, a, input, textarea, select):focus:not(:focus-visible) {
+  outline: none;
+}
+
+[data-theme] :where(button, a, input, textarea, select):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+[data-theme] :where(span, svg) {
+  outline: none;
+}
+
+.sanctum-input {
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.sanctum-input::placeholder {
+  color: var(--text-muted);
+}
+
+.sanctum-speaking {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.sanctum-speaking::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 72% 18%, rgba(201, 163, 90, 0.38), transparent 46%);
+  pointer-events: none;
+}
+
+[data-theme] .sanctum-speaking :where(h1, h2, p, span) {
+  color: var(--text);
+}
+
+.live-pulse {
+  animation: sanctum-live-pulse 1.6s var(--ease-sanctum) infinite;
+}
+
+@keyframes sanctum-live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-pulse {
+    animation: none;
+  }
+}

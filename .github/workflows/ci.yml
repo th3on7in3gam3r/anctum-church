@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check:brand
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+        working-directory: site
+      - run: node ../scripts/check-brand.mjs
+        working-directory: site
+      - run: npm run typecheck
+        working-directory: site
+      - run: npm run build
+        working-directory: site
+
+  contrast:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sanctum
+          POSTGRES_PASSWORD: sanctum
+          POSTGRES_DB: sanctum_live
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sanctum -d sanctum_live"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://sanctum:sanctum@localhost:5432/sanctum_live?connection_limit=10&pool_timeout=20
+      LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
+      LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
+      LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+      SANCTUM_MODE: church
+      PUBLIC_SITE_URL: http://127.0.0.1:3002
+      API_PORT: "3001"
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Require LiveKit secrets
+        run: |
+          if [ -z "$LIVEKIT_URL" ] || [ -z "$LIVEKIT_API_KEY" ] || [ -z "$LIVEKIT_API_SECRET" ]; then
+            echo "Add LIVEKIT_URL, LIVEKIT_API_KEY, and LIVEKIT_API_SECRET to the repository Actions secrets."
+            exit 1
+          fi
+      - run: npx playwright install --with-deps chromium
+      - run: npx prisma migrate deploy
+      - run: npx tsx scripts/seed-contrast-room.ts
+      - name: Run the contrast check
+        env:
+          NODE_ENV: development
+        run: |
+          npm run server > /tmp/sanctum-api.log 2>&1 &
+          npx vite --port=3000 --host=127.0.0.1 > /tmp/sanctum-vite.log 2>&1 &
+          ready=0
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+            if curl -sf http://127.0.0.1:3001/api/health >/dev/null && curl -sf http://127.0.0.1:3000/join/promised-land-christian-center >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 3
+          done
+          if [ "$ready" != 1 ]; then
+            echo "Sanctum did not start"
+            cat /tmp/sanctum-api.log || true
+            cat /tmp/sanctum-vite.log || true
+            exit 1
+          fi
+          npx playwright test tests/e2e/public-theme.spec.ts
