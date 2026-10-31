@@ -1,5 +1,6 @@
 import React from 'react';
 import { DemoSignIn } from '../components/common/DemoSignIn';
+import { StorehouseLogo } from '../components/common/StorehouseLogo';
 import { SanctumLogo } from '../components/common/SanctumLogo';
 import { sanctumTheme } from '../components/public/ChurchWordmark';
 import { StaffBrand } from '../components/dashboard/StaffBrand';
@@ -41,7 +42,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
 
       <main className="ui-card w-full max-w-[26.5rem] rounded-[26px] px-6 py-8 shadow-[0_24px_70px_rgba(8,16,12,0.28)] sm:px-8 sm:py-10">
         <div className="mb-6 flex justify-center">
-          {church ? (
+          {demo.enabled ? (
+            <button type="button" onClick={() => onNavigate('/')} className="cursor-pointer rounded-2xl bg-[#F8F7F3] px-3 py-2" aria-label="Sanctum Storehouse home">
+              <StorehouseLogo />
+            </button>
+          ) : church ? (
             <StaffBrand size="md" />
           ) : (
             <button type="button" onClick={() => leaveToHome(onNavigate)} className="cursor-pointer">
@@ -54,7 +59,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold">Staff</p>
           <h1 className="mt-2 font-display text-[2rem] leading-none text-ink">Sign in</h1>
           <p className="mx-auto mt-3 max-w-[18rem] text-sm leading-relaxed text-muted">
-            {church
+            {demo.enabled
+              ? 'Try the staff app as anyone at a sample church.'
+              : church
               ? 'Prayer, the gallery, and the church dashboard.'
               : 'Create a Sanctum Space or join one you were invited to. Congregants join with a prayer link and their name. No account on the join page.'}
           </p>
@@ -118,7 +125,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
       </main>
 
       <footer className="mt-6 w-full max-w-[26.5rem] space-y-2 text-center text-xs text-muted">
-        {church ? (
+        {demo.enabled ? (
+          <p className="flex flex-wrap justify-center gap-4">
+            <button type="button" onClick={() => onNavigate('/')} className="min-h-11 cursor-pointer font-semibold text-ink hover:underline">About Sanctum Storehouse</button>
+            <button type="button" onClick={() => onNavigate('/church')} className="min-h-11 cursor-pointer font-semibold text-ink hover:underline">Demo church website</button>
+          </p>
+        ) : church ? (
           <a href={site} className="font-semibold text-ink hover:underline">Back to the website</a>
         ) : (
           <p>
@@ -132,7 +144,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
             </button>
           </p>
         )}
-        <p>Powered by Sanctum Live</p>
+        <p>{demo.enabled ? 'Sanctum Storehouse demo' : 'Powered by Sanctum Live'}</p>
       </footer>
     </div>
   );

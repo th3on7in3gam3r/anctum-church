@@ -51,6 +51,13 @@ export const DEMO_PERSONAS: readonly DemoPersona[] = [
   { key: 'volunteer', name: 'Peter Mugisha', email: 'volunteer@demo.church', description: 'Sees only what a volunteer needs.' },
 ];
 
+const GROUP_BLURBS = [
+  'Singers and musicians who lead Sunday worship. New voices welcome.',
+  'Food, games and Bible study for ages 13–25.',
+  'Encouragement, prayer and practical help for women of every age.',
+  'The friendly faces who welcome you at the door every Sunday.',
+];
+
 const FIRST = ['Sarah', 'David', 'Faith', 'John', 'Mary', 'Paul', 'Joy', 'James', 'Ann', 'Moses', 'Rebecca', 'Isaac', 'Lydia', 'Brian', 'Naomi', 'Victor', 'Agnes', 'Simon', 'Martha', 'Patrick', 'Hope', 'Kevin', 'Diana', 'Allan'];
 const LAST = ['Okello', 'Nakato', 'Mutua', 'Achieng', 'Ssempa', 'Wanjiku', 'Banda', 'Mensah'];
 
@@ -66,10 +73,14 @@ export async function seedDemoChurch(prisma: PrismaClient): Promise<{ organizati
       name: 'Grace Fellowship Church',
       slug: DEMO_ORG_SLUG,
       primaryContactName: 'Grace Mwangi',
-      primaryContactEmail: 'superadmin@demo.church',
+      primaryContactEmail: 'office@gracefellowship.example',
       appName: 'Church Hub',
       brandTheme: 'forest',
       defaultSermonSpeaker: 'Pastor Samuel Okafor',
+      timezone: 'Africa/Nairobi',
+      country: 'Kenya',
+      phone: '+254 700 123 456',
+      website: '/church',
       joinPageMessage: 'Join your church family in prayer.',
     },
   });
@@ -149,7 +160,14 @@ export async function seedDemoChurch(prisma: PrismaClient): Promise<{ organizati
   for (let g = 0; g < groupDefs.length; g += 1) {
     const leader = members[g * 3];
     const group = await prisma.group.create({
-      data: { organizationId: org.id, ...groupDefs[g], leaderMemberId: leader.id, showOnWebsite: true, sortOrder: g },
+      data: {
+        organizationId: org.id,
+        ...groupDefs[g],
+        leaderMemberId: leader.id,
+        showOnWebsite: true,
+        sortOrder: g,
+        publicDescription: GROUP_BLURBS[g],
+      },
     });
     for (let m = 0; m < 5; m += 1) {
       const member = members[(g * 5 + m) % members.length];
@@ -170,14 +188,21 @@ export async function seedDemoChurch(prisma: PrismaClient): Promise<{ organizati
 
   const day = 24 * 60 * 60 * 1000;
   const now = Date.now();
+  // Times are East Africa Time (UTC+3), stored in UTC.
+  const nextWeekday = (weekday: number, weeksAhead: number, utcHour: number) => {
+    const date = new Date(now);
+    date.setUTCHours(utcHour, 0, 0, 0);
+    const ahead = (weekday - date.getUTCDay() + 7) % 7 || 7;
+    date.setUTCDate(date.getUTCDate() + ahead + weeksAhead * 7);
+    return date;
+  };
   const events = [
-    { title: 'Sunday worship', location: 'Main sanctuary', offset: 2, hours: 2 },
-    { title: 'Youth fellowship dinner', location: 'Church hall', offset: 9, hours: 3, rsvpEnabled: true },
-    { title: 'Overnight prayer', location: 'Main sanctuary and online', offset: 13, hours: 8 },
+    { title: 'Sunday worship', location: 'Main sanctuary', at: nextWeekday(0, 0, 6), hours: 2 },
+    { title: 'Youth fellowship dinner', location: 'Church hall', at: nextWeekday(6, 1, 12), hours: 3, rsvpEnabled: true },
+    { title: 'Overnight prayer', location: 'Main sanctuary and online', at: nextWeekday(5, 1, 18), hours: 8 },
   ];
   for (const event of events) {
-    const startsAt = new Date(now + event.offset * day);
-    startsAt.setUTCHours(7, 0, 0, 0);
+    const startsAt = event.at;
     await prisma.event.create({
       data: {
         organizationId: org.id,
@@ -208,7 +233,71 @@ export async function seedDemoChurch(prisma: PrismaClient): Promise<{ organizati
   for (let i = 0; i < faqs.length; i += 1) {
     await prisma.faq.create({ data: { organizationId: org.id, ...faqs[i], sortOrder: i } });
   }
-  await prisma.leader.create({ data: { organizationId: org.id, name: 'Pastor Samuel Okafor', role: 'Senior Pastor', sortOrder: 0 } });
+  await prisma.faq.create({ data: { organizationId: org.id, question: 'What should I wear?', answer: 'Come as you are. You will see everything from Sunday best to jeans.', sortOrder: 2 } });
+  await prisma.faq.create({ data: { organizationId: org.id, question: 'Where do I park?', answer: 'There is free parking behind the church hall. Ushers will help you on Sunday.', sortOrder: 3 } });
+  const leaders = [
+    { name: 'Pastor Samuel Okafor', role: 'Senior Pastor', bio: 'Pastor Samuel has led Grace Fellowship for twelve years. He loves the Psalms and a long Sunday lunch.' },
+    { name: 'Mama Grace Okafor', role: 'Women’s ministry', bio: 'Grace leads the women’s fellowship and the hospitality team.' },
+    { name: 'Joseph Kato', role: 'Prayer ministry', bio: 'Joseph leads the midweek and overnight prayer rooms.' },
+    { name: 'Mercy Wanjiru', role: 'Youth & children', bio: 'Mercy runs the youth fellowship and the children’s rooms on Sunday.' },
+  ];
+  for (let i = 0; i < leaders.length; i += 1) {
+    await prisma.leader.create({ data: { organizationId: org.id, ...leaders[i], sortOrder: i } });
+  }
+
+  const serviceTimes = [
+    { name: 'Sunday worship', cadence: 'WEEKLY', weekday: 'SUNDAY', opens: '09:00', closes: '11:00', startLabel: '9:00 a.m.', endLabel: '11:00 a.m.', place: 'Main sanctuary', note: 'Worship, the Word, and prayer. Children’s rooms open.', showOnHome: true },
+    { name: 'Second service', cadence: 'WEEKLY', weekday: 'SUNDAY', opens: '11:30', closes: '13:30', startLabel: '11:30 a.m.', endLabel: '1:30 p.m.', place: 'Main sanctuary', note: null, showOnHome: true },
+    { name: 'Midweek prayer', cadence: 'WEEKLY', weekday: 'WEDNESDAY', opens: '18:00', closes: '19:30', startLabel: '6:00 p.m.', endLabel: '7:30 p.m.', place: 'In the hall or live online', note: 'Join from your phone with the prayer link.', showOnHome: true },
+    { name: 'Youth fellowship', cadence: 'WEEKLY', weekday: 'SATURDAY', opens: '15:00', closes: '17:00', startLabel: '3:00 p.m.', endLabel: '5:00 p.m.', place: 'Church hall', note: null, showOnHome: false },
+  ];
+  for (let i = 0; i < serviceTimes.length; i += 1) {
+    await prisma.serviceTime.create({ data: { organizationId: org.id, ...serviceTimes[i], sortOrder: i } });
+  }
+
+  const sermons = [
+    { title: 'Rooted and grounded in love', scripture: 'Ephesians 3:14–21', seriesName: 'Ephesians', weeksAgo: 1 },
+    { title: 'The God who sees', scripture: 'Genesis 16:7–13', seriesName: 'Names of God', weeksAgo: 2 },
+    { title: 'Bread for the journey', scripture: 'John 6:35–40', seriesName: 'I Am', weeksAgo: 3 },
+  ];
+  for (const sermon of sermons) {
+    await prisma.sermon.create({
+      data: {
+        organizationId: org.id,
+        title: sermon.title,
+        speaker: 'Pastor Samuel Okafor',
+        scripture: sermon.scripture,
+        seriesName: sermon.seriesName,
+        preachedOn: new Date(now - sermon.weeksAgo * 7 * day),
+        status: 'PUBLISHED',
+        isPublished: true,
+      },
+    });
+  }
+
+  const appUrl = (process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const prayerRooms = [
+    { name: 'Midweek prayer', slug: 'grace-midweek-prayer', selectedDays: ['Wednesday'], scheduledStart: '06:00 PM', description: 'Pray with the church every Wednesday evening.' },
+    { name: 'Morning prayer', slug: 'grace-morning-prayer', selectedDays: ['Monday', 'Tuesday', 'Thursday', 'Friday'], scheduledStart: '06:00 AM', description: 'A short time of prayer before work.' },
+  ];
+  for (const room of prayerRooms) {
+    await prisma.prayerRoom.create({
+      data: {
+        organizationId: org.id,
+        name: room.name,
+        slug: room.slug,
+        description: room.description,
+        isRecurring: true,
+        recurrenceRule: 'SELECTED_DAYS',
+        selectedDays: room.selectedDays,
+        scheduledStart: room.scheduledStart,
+        durationMinutes: 60,
+        timezone: 'Africa/Nairobi',
+        createdById: staffUserIds.get('moderator') ?? null,
+        permanentUrl: `${appUrl}/join/${room.slug}`,
+      },
+    });
+  }
 
   const superAdminId = staffUserIds.get('super_admin');
   if (superAdminId) {

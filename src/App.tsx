@@ -36,6 +36,8 @@ import { GlobalConfirmModal } from './components/common/GlobalConfirmModal';
 import { loadJoinSession } from './services/realtime/joinSessionStore';
 import { CHURCH_PUBLIC_NAME, churchSiteUrl, isChurchMode } from './lib/appMode';
 import { ChurchSetupPage } from './pages/ChurchSetupPage';
+import { StorehouseLandingPage } from './pages/StorehouseLandingPage';
+import { ChurchSitePage } from './pages/ChurchSitePage';
 import { NoAccessPanel } from './components/dashboard/NoAccessPanel';
 import { navItemAllowed, navItemForPath } from './lib/staffNav';
 
@@ -133,7 +135,7 @@ const RouterContent: React.FC = () => {
       }
       return;
     }
-    if (isAuthenticated && ((!church && currentPath === '/') || currentPath === '/login' || currentPath === '/onboarding')) {
+    if (isAuthenticated && ((!church && currentPath === '/' && import.meta.env.VITE_DEMO_MODE !== 'true') || currentPath === '/login' || currentPath === '/onboarding')) {
       navigate('/dashboard');
       return;
     }
@@ -203,8 +205,11 @@ const RouterContent: React.FC = () => {
   if (currentPath === '/terms') {
     return <TermsPage onNavigate={navigate} />;
   }
+  if (currentPath === '/church' || currentPath.startsWith('/church/')) {
+    return <ChurchSitePage onNavigate={navigate} />;
+  }
   if (currentPath === '/') {
-    if (import.meta.env.VITE_DEMO_MODE === 'true') return <LoginPage onNavigate={navigate} />;
+    if (import.meta.env.VITE_DEMO_MODE === 'true') return <StorehouseLandingPage onNavigate={navigate} />;
     if (isChurchMode()) return <ChurchHomeRedirect />;
     return <LandingPage onNavigate={navigate} />;
   }

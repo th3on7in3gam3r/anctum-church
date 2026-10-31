@@ -12,6 +12,50 @@ import { galleryRepository } from '../../repositories/gallery.ts';
 import { getNextOccurrences } from '../../../src/services/sessionScheduler.ts';
 import type { PrayerRoom } from '../../../src/types/index.ts';
 import { publicLiveRooms } from '../../../shared/huddle.ts';
+import { FeatureOff } from '../../../shared/errors.ts';
+import { brandTheme, effectiveFeatures, featureDefinition, normalizeTerminology, type FeatureKey } from '../../../shared/churchSetup.ts';
+
+/** Which church feature each public path belongs to. A church that turns a feature off loses it on its website too. */
+export const PUBLIC_FEATURE_BY_SEGMENT: Record<string, FeatureKey> = {
+  pages: 'website',
+  faqs: 'website',
+  leaders: 'website',
+  announcements: 'announcements',
+  events: 'events',
+  sermons: 'sermons',
+  albums: 'gallery',
+  videos: 'gallery',
+  groups: 'members',
+  'visitor-cards': 'visitors',
+  live: 'prayerRooms',
+};
+
+async function churchProfile(req: Request, res: Response) {
+  try {
+    const organization = await organizationBySlug(req.params.orgSlug);
+    const row = organization as typeof organization & { appName?: string | null; brandTheme?: string; features?: unknown; terminology?: unknown };
+    const theme = brandTheme(row.brandTheme);
+    res.setHeader('Cache-Control', 'public, max-age=30');
+    res.json({
+      church: {
+        name: organization.name,
+        slug: organization.slug,
+        appName: row.appName || null,
+        logoUrl: organization.logoUrl || null,
+        website: organization.website || null,
+        phone: organization.phone || null,
+        email: organization.primaryContactEmail || null,
+        timezone: organization.timezone,
+        joinPageMessage: organization.joinPageMessage || null,
+        theme: { key: theme.key, primary: theme.primary, primaryDark: theme.primaryDark, accent: theme.accent, accentSoft: theme.accentSoft },
+        terminology: normalizeTerminology(row.terminology),
+        features: effectiveFeatures(row.features),
+      },
+    });
+  } catch (error) {
+    sendError(res, error);
+  }
+}
 
 const PUBLIC_CACHE = 'public, max-age=300';
 
@@ -355,6 +399,21 @@ async function listServiceTimes(req: Request, res: Response) {
 }
 
 export function registerCmsPublicRoutes(app: Express): void {
+  app.get('/api/public/:orgSlug/church', churchProfile);
+  app.use('/api/public/:orgSlug/:segment', async (req, res, next) => {
+    const feature = PUBLIC_FEATURE_BY_SEGMENT[req.params.segment];
+    if (!feature) {
+      next();
+      return;
+    }
+    try {
+      const organization = (await organizationBySlug(req.params.orgSlug)) as { features?: unknown };
+      if (!effectiveFeatures(organization.features)[feature]) throw FeatureOff(featureDefinition(feature).label);
+      next();
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
   app.get('/api/public/:orgSlug/pages', listPages);
   app.get('/api/public/:orgSlug/pages/:slug', getPage);
   app.get('/api/public/:orgSlug/announcements', listAnnouncements);
