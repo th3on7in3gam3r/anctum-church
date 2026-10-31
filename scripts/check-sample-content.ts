@@ -11,6 +11,12 @@ if (process.env.DEPLOY_ENV === 'production' && process.env.ALLOW_PLACEHOLDER ===
   process.exit(1);
 }
 
+// The demo church is sample content by design, and its database is empty until migrations run.
+if (process.env.DEMO_MODE === 'true') {
+  console.log('DEMO_MODE is set. Skipping the sample content check.');
+  process.exit(0);
+}
+
 if (process.env.ALLOW_PLACEHOLDER === 'true') {
   console.log('ALLOW_PLACEHOLDER is set. Sample church content will not block this build.');
   process.exit(0);
